@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -57,25 +58,45 @@ namespace Empleado
             };
             empleados.Add(empleado);
 
-            Stream myStream = new FileStream("empleado.txt", FileMode.Open, FileAccess.Write);
-            XmlSerializer serializador = new XmlSerializer(typeof(List<Empleado>));
-            serializador.Serialize(myStream, empleados);
-            myStream.Close();
+            //Se inicia el flujo con el archivo
+            using (Stream myStream = new FileStream("empleadoJson.txt", FileMode.OpenOrCreate, FileAccess.Write))
+            {
+                //Se serializa la lista de empleados
+                string jsonString = JsonConvert.SerializeObject(empleados);
+
+                //Se sobreescribira el archivo con la clase StreamWriter con el archivo myStream como parametro
+                using(StreamWriter writer = new StreamWriter(myStream))
+                {
+                    //Se sobreescribe la lista de Empleados serializada en el archivo
+                    writer.WriteLine(jsonString);
+                }
+            }
+            //Se lee el archivo
             dataGridView1.DataSource = LeerEmpleados();
         }
 
         public List<Empleado> LeerEmpleados()
         {
-            
-            Stream myStream = new FileStream("empleado.txt", FileMode.OpenOrCreate, FileAccess.Read);
-            if (myStream.Length == 0)
+            //Se inicial el flujo con el archivo que contiene el Json
+            using(Stream myStream = new FileStream("empleadoJson.txt", FileMode.OpenOrCreate, FileAccess.Read))
             {
-                myStream.Close();
-                return new List<Empleado>();
+                //Se verifica si hay escrito algo en el archivo y sino se retorna la lista vacia
+                if (myStream.Length == 0)
+                {
+                    return empleados;
+                }
+
+                //Se leera el archivo con la clase StreamReader
+                using(StreamReader reader = new StreamReader(myStream))
+                {
+                    //Se lee la lista de empleados serializada y se guarda en una variable
+                    string json = reader.ReadToEnd();
+
+                    //Se deserializa el json hacia la lista para posteriormente retornarla
+                    //y mostrarla en el DataGrid o para cualquier otro uso
+                    empleados = JsonConvert.DeserializeObject<List<Empleado>>(json);
+                }
             }
-            XmlSerializer deserializador = new XmlSerializer(typeof(List<Empleado>));
-            empleados = (List<Empleado>)deserializador.Deserialize(myStream);
-            myStream.Close();
             return empleados;
         }
 
